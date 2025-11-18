@@ -12,12 +12,6 @@ let clozeInputs = [];
 
 // --- Fonctions Utilitaires ---
 
-/**
- * Divise le texte en paragraphes basés sur des sauts de ligne ou des phrases, 
- * en limitant le résultat à 3-7 morceaux pour l'apprentissage.
- * @param {string} text - Le texte complet à diviser.
- * @returns {string[]} Tableau de chaînes de caractères (paragraphes).
- */
 function splitIntoParagraphs(text) {
     let paras = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
     
@@ -49,12 +43,6 @@ function splitIntoParagraphs(text) {
     return paras;
 }
 
-/**
- * Génère le contenu HTML du texte à trous.
- * @param {string} text - Le texte à transformer.
- * @param {string} containerId - L'ID de l'élément conteneur.
- * @param {number} holeRatio - Le pourcentage de mots à masquer (e.g., 0.35).
- */
 function generateClozeText(text, containerId, holeRatio) {
     const cleanWord = (word) => word.toLowerCase().replace(/[^\w]/g, ''); 
     const words = text.split(/\s+/).filter(w => w.length > 0);
@@ -64,10 +52,18 @@ function generateClozeText(text, containerId, holeRatio) {
     let html = '';
     let holesCount = 0;
     
+    // Réinitialisation du bouton "Voir les Réponses"
+    const isQuiz = containerId.includes('quiz');
+    const btnId = isQuiz ? 'show-answers-btn-quiz' : 'show-answers-btn-final';
+    const btn = document.getElementById(btnId);
+    if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Voir les Réponses';
+    }
+
     words.forEach((word, index) => {
         const cleaned = cleanWord(word);
         
-        // Cacher les mots de plus de 3 lettres avec la probabilité holeRatio
         if (cleaned.length > 3 && Math.random() < holeRatio) {
             const inputId = `cloze-${containerId}-${index}`;
             const finalPunctuationMatch = word.match(/([.,!?;:"']+)$/);
@@ -76,7 +72,8 @@ function generateClozeText(text, containerId, holeRatio) {
             
             const inputLength = Math.max(10, wordWithoutPunct.length * 1.5);
             
-            html += `<input type="text" id="${inputId}" class="cloze-input" style="width:${inputLength}ch;" placeholder="..." data-original="${wordWithoutPunct.toLowerCase().trim()}" autocomplete="off">`;
+            // Ajout de aria-label="mot manquant" pour plus de clarté
+            html += `<input type="text" id="${inputId}" class="cloze-input" style="width:${inputLength}ch;" placeholder="..." data-original="${wordWithoutPunct.toLowerCase().trim()}" aria-label="mot manquant" autocomplete="off">`;
             html += finalPunctuation + ' ';
             holesCount++;
         } else {
@@ -88,7 +85,7 @@ function generateClozeText(text, containerId, holeRatio) {
     
     clozeInputs = Array.from(container.querySelectorAll('.cloze-input'));
     
-    const feedbackId = containerId.includes('quiz') ? 'quiz-cloze-feedback' : 'final-cloze-feedback';
+    const feedbackId = isQuiz ? 'quiz-cloze-feedback' : 'final-cloze-feedback';
     const feedback = document.getElementById(feedbackId);
     
     if (holesCount < 3) {
@@ -99,11 +96,6 @@ function generateClozeText(text, containerId, holeRatio) {
     }
 }
 
-/**
- * Calcule le score du texte à trous et affiche le feedback visuel.
- * @param {boolean} isFinal - Indique s'il s'agit du test final ou du quiz de paragraphe.
- * @returns {number} Le score en pourcentage.
- */
 function calculateClozeScore(isFinal = false) {
     let correct = 0;
     let total = clozeInputs.length;
@@ -112,7 +104,6 @@ function calculateClozeScore(isFinal = false) {
         const userWord = input.value.toLowerCase().trim();
         const origWord = input.dataset.original.toLowerCase().trim();
         
-        // Réinitialiser les styles
         input.style.borderBottomColor = ''; 
         input.style.color = '';
         
@@ -123,13 +114,21 @@ function calculateClozeScore(isFinal = false) {
         } else {
             input.style.borderBottomColor = '#dc3545'; // Rouge
             input.style.color = '#dc3545';
-            // Montrer la bonne réponse uniquement si ce n'est pas un quiz d'entraînement trop facile
+            // Montrer la bonne réponse uniquement si c'est le test final
             if (isFinal) {
                 input.value = origWord; 
             }
         }
+        input.disabled = true; // Désactive les inputs après vérification
     });
     
+    // Désactiver le bouton "Voir les réponses" après la vérification
+    const btnId = isFinal ? 'show-answers-btn-final' : 'show-answers-btn-quiz';
+    const btn = document.getElementById(btnId);
+    if (btn) {
+        btn.disabled = true;
+    }
+
     const score = total > 0 ? (correct / total) * 100 : 0;
     
     if (!isFinal) {
@@ -137,6 +136,23 @@ function calculateClozeScore(isFinal = false) {
     }
     
     return score;
+}
+
+/**
+ * Affiche la bonne réponse dans chaque champ de saisie du texte à trous.
+ */
+function showAnswers(containerId) {
+    clozeInputs.forEach(input => {
+        const origWord = input.dataset.original.trim();
+        input.value = origWord;
+        input.style.borderBottomColor = '#198754'; // Vert
+        input.style.color = '#198754';
+        input.disabled = true; // Désactiver l'input après avoir montré la réponse
+    });
+    
+    const btnId = containerId.includes('quiz') ? 'show-answers-btn-quiz' : 'show-answers-btn-final';
+    document.getElementById(btnId).disabled = true;
+    document.getElementById(btnId).textContent = 'Réponses Affichées';
 }
 
 // --- Fonctions Chrono et Navigation ---
@@ -171,10 +187,6 @@ function updateTimer() {
     }
 }
 
-/**
- * Affiche la section spécifiée et masque les autres.
- * @param {string} sectionId - L'ID de la section à afficher.
- */
 function showSection(sectionId) {
     document.querySelectorAll('[id$="-section"], #input-section, #progress-section, #final-results').forEach(el => el.classList.add('hidden'));
     document.getElementById(sectionId).classList.remove('hidden');
@@ -227,8 +239,7 @@ document.getElementById('confirm-time').addEventListener('click', () => {
     const radioSelected = document.querySelector('input[name="read-time"]:checked');
     const customTimeInput = document.getElementById('custom-time');
     
-    // Priorité au champ custom s'il a été modifié
-    if (document.activeElement === customTimeInput) {
+    if (document.activeElement === customTimeInput && customTimeInput.value) {
          initialTime = parseInt(customTimeInput.value) || 300;
     } else {
          initialTime = radioSelected ? parseInt(radioSelected.value) : 300;
@@ -289,12 +300,6 @@ function showResults(score) {
     updateProgress();
 }
 
-function updateProgress() {
-    const progress = ((currentPara + 1) / totalParas) * 100;
-    document.getElementById('progress-bar').style.width = `${progress}%`;
-    document.getElementById('progress-text').textContent = `Paragraphe ${currentPara + 1}/${totalParas}`;
-}
-
 // 8. Boutons "Refaire" et "Continuer"
 document.getElementById('redo-btn').addEventListener('click', () => {
     showReading();
@@ -331,6 +336,17 @@ document.getElementById('submit-final').addEventListener('click', () => {
     showFinalResults(finalScore);
 });
 
+// 11. Gestionnaire pour le bouton "Afficher les Réponses" dans le Quiz de Paragraphe
+document.getElementById('show-answers-btn-quiz').addEventListener('click', () => {
+    showAnswers('quiz-cloze-container');
+});
+
+// 12. Gestionnaire pour le bouton "Afficher les Réponses" dans le Test Final
+document.getElementById('show-answers-btn-final').addEventListener('click', () => {
+    showAnswers('final-cloze-container');
+});
+
+
 function showFinalResults(finalScore) {
     showSection('final-results');
     document.getElementById('final-percent').textContent = `${Math.round(finalScore)}%`;
@@ -362,7 +378,7 @@ function showFinalResults(finalScore) {
     });
 }
 
-// 11. Recommencer
+// 13. Recommencer
 document.getElementById('restart-btn').addEventListener('click', () => {
     document.getElementById('text-form').reset();
     paragraphs = [];
