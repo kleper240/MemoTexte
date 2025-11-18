@@ -1,0 +1,54 @@
+/* Base */
+body { 
+    background-color: #f8f9fa; 
+}
+.hidden { 
+    display: none; 
+}
+
+/* Texte de Lecture */
+.paragraph-text { 
+    font-size: 18px; 
+    line-height: 1.6; 
+    white-space: pre-wrap; 
+}
+
+/* Chronomètre */
+#timer { 
+    font-size: 2em; 
+    font-weight: bold; 
+    color: #dc3545; /* Rouge pour l'alerte */
+}
+.timer-controls { 
+    text-align: center; 
+    margin-bottom: 1rem; 
+}
+
+/* Texte à Trous (Cloze Test) */
+.cloze-text { 
+    font-size: 18px; 
+    line-height: 1.6; 
+}
+.cloze-input { 
+    border: none; 
+    border-bottom: 2px dashed #007bff; /* Bleu pour l'interactivité */
+    padding: 0px 4px; 
+    margin: 0 4px; 
+    min-width: 50px; 
+    text-align: center;
+    background-color: transparent;
+    font-size: 1em;
+    line-height: 1.6;
+    transition: border-bottom-color 0.3s, color 0.3s;
+}
+.cloze-input:focus {
+    outline: none;
+    border-bottom-color: #28a745; /* Vert au focus */
+}
+
+/* Feedback et Avertissements */
+.cloze-warning { 
+    color: #ffc107; 
+    font-weight: bold; 
+    margin-top: 10px; 
+}
