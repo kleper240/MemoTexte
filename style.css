@@ -14,12 +14,12 @@ body {
 }
 
 /* Chronomètre */
-#timer { 
+#timer, #timer-quiz { /* Ajout de #timer-quiz */
     font-size: 2em; 
     font-weight: bold; 
     color: #dc3545; /* Rouge pour l'alerte */
 }
-.timer-controls { 
+.timer-controls, .timer-controls-quiz { /* Ajout de .timer-controls-quiz */
     text-align: center; 
     margin-bottom: 1rem; 
 }
