@@ -5,16 +5,16 @@ let timerInterval;
 let initialTime = 300; 
 let timeLeft = 300;
 let isPaused = false;
-let timerHidden = false;
+let timerHidden = false; // Maintenu pour le contrôle du bouton "Cacher"
 let fullText = '';
 let totalParas = 0;
-let clozeInputs = []; 
 
-// --- Fonctions Utilitaires ---
+// --- Fonctions Utilitaires (Raccourci) ---
 
 function splitIntoParagraphs(text) {
     let paras = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
     
+    // Logique de regroupement si trop de paragraphes ou trop peu
     if (paras.length > 7) {
         const chunkSize = Math.ceil(paras.length / 7);
         const chunks = [];
@@ -26,7 +26,7 @@ function splitIntoParagraphs(text) {
             }
         }
         paras = chunks;
-    } else if (paras.length < 3) {
+    } else if (paras.length < 3 && text.split('.').length > 5) { // Basé sur le nombre de phrases
         let sentences = text.split(/(?<=[.!?])\s+(?=[A-Z])/).filter(s => s.trim().length > 0);
         const numParas = Math.min(5, Math.max(3, Math.ceil(sentences.length / 3)));
         const sentPerPara = Math.ceil(sentences.length / numParas);
@@ -43,12 +43,14 @@ function splitIntoParagraphs(text) {
     return paras;
 }
 
+/**
+ * Génère le contenu HTML du texte à trous.
+ */
 function generateClozeText(text, containerId, holeRatio) {
     const cleanWord = (word) => word.toLowerCase().replace(/[^\w]/g, ''); 
     const words = text.split(/\s+/).filter(w => w.length > 0);
     const container = document.getElementById(containerId);
     container.innerHTML = '';
-    clozeInputs = []; 
     let html = '';
     let holesCount = 0;
     
@@ -72,7 +74,6 @@ function generateClozeText(text, containerId, holeRatio) {
             
             const inputLength = Math.max(10, wordWithoutPunct.length * 1.5);
             
-            // Ajout de aria-label="mot manquant" pour plus de clarté
             html += `<input type="text" id="${inputId}" class="cloze-input" style="width:${inputLength}ch;" placeholder="..." data-original="${wordWithoutPunct.toLowerCase().trim()}" aria-label="mot manquant" autocomplete="off">`;
             html += finalPunctuation + ' ';
             holesCount++;
@@ -82,8 +83,6 @@ function generateClozeText(text, containerId, holeRatio) {
     });
     
     container.innerHTML = html.trim().replace(/\s*([.,!?;:"'])/g, '$1 ');
-    
-    clozeInputs = Array.from(container.querySelectorAll('.cloze-input'));
     
     const feedbackId = isQuiz ? 'quiz-cloze-feedback' : 'final-cloze-feedback';
     const feedback = document.getElementById(feedbackId);
@@ -96,11 +95,20 @@ function generateClozeText(text, containerId, holeRatio) {
     }
 }
 
-function calculateClozeScore(isFinal = false) {
-    let correct = 0;
-    let total = clozeInputs.length;
+/**
+ * Calcule le score du quiz.
+ * @param {string} containerId - ID du conteneur des inputs ('quiz-cloze-container' ou 'final-cloze-container').
+ * @param {boolean} isFinal - Indique si c'est le test final.
+ */
+function calculateClozeScore(containerId, isFinal = false) {
+    // CORRECTION MAJEURE: On récupère les inputs directement dans le conteneur cible.
+    const container = document.getElementById(containerId);
+    const inputs = container.querySelectorAll('.cloze-input');
     
-    clozeInputs.forEach(input => {
+    let correct = 0;
+    let total = inputs.length;
+    
+    inputs.forEach(input => {
         const userWord = input.value.toLowerCase().trim();
         const origWord = input.dataset.original.toLowerCase().trim();
         
@@ -114,13 +122,19 @@ function calculateClozeScore(isFinal = false) {
         } else {
             input.style.borderBottomColor = '#dc3545'; // Rouge
             input.style.color = '#dc3545';
-            // Montrer la bonne réponse uniquement si c'est le test final
             if (isFinal) {
+                // Montrer la bonne réponse dans le test final après vérification
                 input.value = origWord; 
             }
         }
         input.disabled = true; // Désactive les inputs après vérification
     });
+    
+    // Arrêter le chrono du quiz s'il est actif
+    if (containerId === 'quiz-cloze-container') {
+        clearInterval(timerInterval);
+        document.getElementById('pause-timer-quiz').disabled = true;
+    }
     
     // Désactiver le bouton "Voir les réponses" après la vérification
     const btnId = isFinal ? 'show-answers-btn-final' : 'show-answers-btn-quiz';
@@ -140,9 +154,14 @@ function calculateClozeScore(isFinal = false) {
 
 /**
  * Affiche la bonne réponse dans chaque champ de saisie du texte à trous.
+ * @param {string} containerId - L'ID du conteneur du quiz.
  */
 function showAnswers(containerId) {
-    clozeInputs.forEach(input => {
+    // CORRECTION MAJEURE: On récupère les inputs directement dans le conteneur cible.
+    const container = document.getElementById(containerId);
+    const inputs = container.querySelectorAll('.cloze-input');
+    
+    inputs.forEach(input => {
         const origWord = input.dataset.original.trim();
         input.value = origWord;
         input.style.borderBottomColor = '#198754'; // Vert
@@ -153,44 +172,61 @@ function showAnswers(containerId) {
     const btnId = containerId.includes('quiz') ? 'show-answers-btn-quiz' : 'show-answers-btn-final';
     document.getElementById(btnId).disabled = true;
     document.getElementById(btnId).textContent = 'Réponses Affichées';
+    
+    // NOUVEAU: Arrêter le chrono du quiz quand on affiche les réponses
+    if (containerId.includes('quiz')) {
+        clearInterval(timerInterval);
+        const timerElement = document.getElementById('timer-quiz');
+        updateTimerDisplay(timerElement, 0); // Afficher 00:00
+        document.getElementById('pause-timer-quiz').disabled = true;
+    }
 }
 
-// --- Fonctions Chrono et Navigation ---
+// --- Fonctions Chrono et Navigation (Généralisées) ---
 
-function startTimer() {
+/**
+ * Met à jour l'affichage du chrono.
+ */
+function updateTimerDisplay(element, time) {
+    const mins = Math.floor(time / 60);
+    const secs = time % 60;
+    element.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Démarre le chrono pour la lecture ou le quiz.
+ */
+function startTimer(duration, elementId, onFinishCallback, usePauseButton = true) {
     if (timerInterval) clearInterval(timerInterval);
     
-    isPaused = false;
-    document.getElementById('pause-timer').textContent = 'Pause';
-    document.getElementById('pause-timer').classList.remove('btn-success');
-    document.getElementById('pause-timer').classList.add('btn-outline-secondary');
+    timeLeft = duration; 
+    
+    const timerElement = document.getElementById(elementId);
+    if (!timerElement) return;
 
-    updateTimer();
+    // Réinitialisation de la pause
+    isPaused = false;
+    const pauseBtnId = elementId === 'timer' ? 'pause-timer' : 'pause-timer-quiz';
+    const pauseBtn = document.getElementById(pauseBtnId);
+    if (pauseBtn) {
+        pauseBtn.textContent = 'Pause';
+        pauseBtn.classList.remove('btn-success');
+        pauseBtn.classList.add('btn-outline-secondary');
+        pauseBtn.disabled = !usePauseButton;
+    }
+
+    updateTimerDisplay(timerElement, timeLeft);
     
     timerInterval = setInterval(() => {
         if (!isPaused) {
             timeLeft--;
-            updateTimer();
+            updateTimerDisplay(timerElement, timeLeft);
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
-                showQuizLevelModal();
+                if (onFinishCallback) onFinishCallback();
             }
         }
     }, 1000);
-}
-
-function updateTimer() {
-    if (!timerHidden) {
-        const mins = Math.floor(timeLeft / 60);
-        const secs = timeLeft % 60;
-        document.getElementById('timer').textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-}
-
-function showSection(sectionId) {
-    document.querySelectorAll('[id$="-section"], #input-section, #progress-section, #final-results').forEach(el => el.classList.add('hidden'));
-    document.getElementById(sectionId).classList.remove('hidden');
-    if (sectionId.includes('progress')) document.getElementById('progress-section').classList.remove('hidden');
 }
 
 function showQuizLevelModal() {
@@ -213,6 +249,12 @@ function startQuizFromLevel() {
     
     showSection('quiz-section');
     document.getElementById('quiz-para-num').textContent = currentPara + 1;
+    
+    // NOUVEAU: Démarrer le chrono du quiz avec le même temps initial
+    startTimer(initialTime, 'timer-quiz', () => {
+        // Soumission automatique si le temps est écoulé
+        document.getElementById('submit-quiz').click(); 
+    });
 }
 
 // --- Événements et Flux d'Application ---
@@ -245,7 +287,6 @@ document.getElementById('confirm-time').addEventListener('click', () => {
          initialTime = radioSelected ? parseInt(radioSelected.value) : 300;
     }
     
-    timeLeft = initialTime;
     currentPara = 0;
     scores = new Array(totalParas).fill(0); 
 
@@ -257,21 +298,17 @@ document.getElementById('confirm-time').addEventListener('click', () => {
 // 3. Affichage de la Lecture
 function showReading() {
     if (timerInterval) clearInterval(timerInterval);
-    timeLeft = initialTime;
     
     showSection('reading-section');
     document.getElementById('reading-title').textContent = `Lecture du Paragraphe ${currentPara + 1}`;
     document.getElementById('reading-text').textContent = paragraphs[currentPara];
     
-    isPaused = false;
     timerHidden = false;
     document.getElementById('timer').classList.remove('d-none');
     document.getElementById('hide-timer').textContent = 'Cacher';
-    document.getElementById('pause-timer').textContent = 'Pause';
-    document.getElementById('pause-timer').classList.remove('btn-success');
-    document.getElementById('pause-timer').classList.add('btn-outline-secondary');
-
-    startTimer();
+    
+    // Démarrer le chrono de lecture
+    startTimer(initialTime, 'timer', showQuizLevelModal);
 }
 
 // 4. Clic sur "Pratiquer le Quiz Directement"
@@ -286,7 +323,7 @@ document.getElementById('start-quiz-with-level').addEventListener('click', () =>
 
 // 6. Soumission du Quiz de Paragraphe (Texte à Trous)
 document.getElementById('submit-quiz').addEventListener('click', () => {
-    const score = calculateClozeScore(false); 
+    const score = calculateClozeScore('quiz-cloze-container', false); 
     showResults(score);
 });
 
@@ -298,6 +335,12 @@ function showResults(score) {
     const details = `Mots corrects trouvés : ${Math.round(score)}%`;
     document.getElementById('score-details').textContent = details;
     updateProgress();
+}
+
+function updateProgress() {
+    const percent = ((currentPara + 1) / totalParas) * 100;
+    document.getElementById('progress-bar').style.width = `${percent}%`;
+    document.getElementById('progress-text').textContent = `Paragraphe ${currentPara + 1}/${totalParas}`;
 }
 
 // 8. Boutons "Refaire" et "Continuer"
@@ -316,7 +359,7 @@ document.getElementById('continue-btn').addEventListener('click', () => {
     }
 });
 
-// 9. Contrôles Timer
+// 9. Contrôles Timer (Lecture)
 document.getElementById('hide-timer').addEventListener('click', () => {
     timerHidden = !timerHidden;
     document.getElementById('timer').classList.toggle('d-none', timerHidden);
@@ -330,18 +373,25 @@ document.getElementById('pause-timer').addEventListener('click', () => {
     document.getElementById('pause-timer').classList.toggle('btn-outline-secondary', !isPaused);
 });
 
-// 10. Test Final
+// 10. Contrôles Timer (Quiz)
+document.getElementById('pause-timer-quiz').addEventListener('click', () => {
+    isPaused = !isPaused;
+    document.getElementById('pause-timer-quiz').textContent = isPaused ? 'Reprendre' : 'Pause';
+    document.getElementById('pause-timer-quiz').classList.toggle('btn-success', isPaused);
+    document.getElementById('pause-timer-quiz').classList.toggle('btn-outline-secondary', !isPaused);
+});
+
+// 11. Test Final
 document.getElementById('submit-final').addEventListener('click', () => {
-    const finalScore = calculateClozeScore(true);
+    const finalScore = calculateClozeScore('final-cloze-container', true);
     showFinalResults(finalScore);
 });
 
-// 11. Gestionnaire pour le bouton "Afficher les Réponses" dans le Quiz de Paragraphe
+// 12. Gestionnaires pour le bouton "Voir les Réponses"
 document.getElementById('show-answers-btn-quiz').addEventListener('click', () => {
     showAnswers('quiz-cloze-container');
 });
 
-// 12. Gestionnaire pour le bouton "Afficher les Réponses" dans le Test Final
 document.getElementById('show-answers-btn-final').addEventListener('click', () => {
     showAnswers('final-cloze-container');
 });
@@ -380,7 +430,7 @@ function showFinalResults(finalScore) {
 
 // 13. Recommencer
 document.getElementById('restart-btn').addEventListener('click', () => {
-    document.getElementById('text-form').reset();
+    document.getElementById('full-text').value = '';
     paragraphs = [];
     currentPara = 0;
     scores = [];
