@@ -45,6 +45,14 @@ Cet outil est une application web simple conçue pour aider l'utilisateur à mé
 
 ### 💡 Points Clés du Code
 
+
+
 * La fonction `splitIntoParagraphs(text)` adapte la taille des blocs pour garantir une session d'étude efficace (max 7 paragraphes).
 * La fonction `calculateClozeScore(isFinal)` est responsable de l'application des classes CSS (`.correct` ou `.incorrect`) et du statut `readOnly` aux champs de saisie, assurant ainsi le feedback vert/rouge souhaité sans ligne pointillée.
 * Les variables `quizTimeLeft` et `quizIsPaused` sont conservées pour permettre la reprise exacte du chronomètre du quiz après consultation des résultats.
+
+----
+### Liens: 
+```bash
+https://kleper240.github.io/MemoTexte/
+```
