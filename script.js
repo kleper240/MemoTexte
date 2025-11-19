@@ -383,7 +383,7 @@ function showResults(score) {
     updateProgress();
     
     // Si score bas (<50%), montrer la correction détaillée
-    if (score < 50) {
+    if (score < 90) {
         generateCorrectionDisplay();
         document.getElementById('correction-section').classList.remove('hidden');
         document.getElementById('retry-quiz-btn').classList.remove('hidden');
