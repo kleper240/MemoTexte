@@ -14,12 +14,12 @@ body {
 }
 
 /* Chronomètre */
-#timer, #timer-quiz { /* Ajout de #timer-quiz */
+#timer, #quiz-timer { 
     font-size: 2em; 
     font-weight: bold; 
     color: #dc3545; /* Rouge pour l'alerte */
 }
-.timer-controls, .timer-controls-quiz { /* Ajout de .timer-controls-quiz */
+.timer-controls { 
     text-align: center; 
     margin-bottom: 1rem; 
 }
@@ -30,6 +30,7 @@ body {
     line-height: 1.6; 
 }
 .cloze-input { 
+    /* Style par défaut: ligne pointillée pour indiquer le trou */
     border: none; 
     border-bottom: 2px dashed #007bff; /* Bleu pour l'interactivité */
     padding: 0px 4px; 
@@ -44,6 +45,18 @@ body {
 .cloze-input:focus {
     outline: none;
     border-bottom-color: #28a745; /* Vert au focus */
+}
+
+/* CORRECTION : Affichage du mot complet en couleur */
+.cloze-input.correct {
+    border-bottom: 2px dashed #198754;
+    color: #198754 !important; /* Couleur du TEXTE en vert */
+    font-weight: bold; /* Rendre le mot plus visible */
+}
+.cloze-input.incorrect {
+    border-bottom: 2px dashed #dc3545;
+    color: #dc3545 !important; /* Couleur du TEXTE en rouge */
+    font-weight: bold; /* Rendre le mot plus visible */
 }
 
 /* Feedback et Avertissements */
