@@ -105,17 +105,16 @@
 
         <div id="quiz-section" class="hidden card p-4">
             <h2 id="quiz-title">Quiz : Paragraphe <span id="quiz-para-num"></span></h2>
-            <div class="timer-controls-quiz d-flex justify-content-center align-items-center mb-3">
-                <div id="timer-quiz" class="d-inline me-3">05:00</div>
-                <button id="pause-timer-quiz" class="btn btn-sm btn-outline-secondary me-2">Pause</button>
+            <div class="timer-controls d-flex justify-content-center align-items-center mb-3">
+                <div id="quiz-timer" class="d-inline me-3">10:00</div>
+                <button id="hide-quiz-timer" class="btn btn-sm btn-outline-secondary me-2">Cacher</button>
+                <button id="pause-quiz-timer" class="btn btn-sm btn-outline-secondary me-2">Pause</button>
             </div>
             <p class="text-muted">Remplissez les trous manquants (un mot par trou) :</p>
             <div id="quiz-cloze-container" class="cloze-text bg-light p-3 rounded mb-3"></div>
             <div id="quiz-cloze-feedback" class="cloze-warning hidden"></div>
-            <div class="d-flex justify-content-between">
-                <button id="show-answers-btn-quiz" class="btn btn-sm btn-info text-white">Voir les Réponses</button>
-                <button id="submit-quiz" class="btn btn-success">Vérifier le Quiz</button>
-            </div>
+            <button id="submit-quiz" class="btn btn-success">Vérifier le Quiz</button>
+            <button id="reset-quiz" class="btn btn-secondary hidden">Réinitialiser</button>
         </div>
 
         <div id="results-section" class="hidden card p-4">
@@ -124,8 +123,14 @@
                 <h3 id="score-percent"></h3>
                 <p id="score-details"></p>
             </div>
+            <div id="correction-section" class="hidden mt-3">
+                <h5>Correction Détaillée</h5>
+                <p class="text-muted">Voici votre texte avec les réponses correctes en vert et les erreurs en rouge :</p>
+                <div id="correction-cloze" class="cloze-text bg-light p-3 rounded mb-3"></div>
+            </div>
             <div class="d-flex gap-2 justify-content-center">
                 <button id="redo-btn" class="btn btn-warning">Refaire (nouvelle lecture)</button>
+                <button id="retry-quiz-btn" class="btn btn-info hidden">Refaire le Quiz</button>
                 <button id="continue-btn" class="btn btn-success">Continuer</button>
             </div>
         </div>
@@ -136,10 +141,7 @@
                 <p class="text-muted">Remplissez les trous manquants (densité moyenne) :</p>
                 <div id="final-cloze-container" class="cloze-text bg-light p-3 rounded mb-3"></div>
                 <div id="final-cloze-feedback" class="cloze-warning hidden"></div>
-                <div class="d-flex justify-content-between">
-                    <button id="show-answers-btn-final" class="btn btn-sm btn-info text-white">Voir les Réponses</button>
-                    <button id="submit-final" class="btn btn-success">Vérifier le Test Final</button>
-                </div>
+                <button id="submit-final" class="btn btn-success">Vérifier le Test Final</button>
             </div>
         </div>
 
